@@ -64,6 +64,7 @@ class PortfolioSummary(FavaExtensionBase):  # pragma: no cover
         portfolios = []
         _t0 = time.time()
         self.irr = IRR(self.ledger.all_entries, g.ledger.price_map, self.operating_currency)
+        portfolio_summary = []
         for key, pattern, internal, mwr, twr in self.parse_config():
             any_mwr |= bool(mwr)
             any_twr |= bool(twr)
@@ -74,6 +75,17 @@ class PortfolioSummary(FavaExtensionBase):  # pragma: no cover
                 raise Exception from _e
             all_mwr_internal |= internal
             portfolios.append(portfolio)
+        for title, portfolio_data in portfolios:
+            for row in portfolio_data[1]:
+                if row['account'] == 'Total':
+                    row_copy = row.copy()
+                    row_copy['account'] = title
+                    row_copy['allocation'] = round(100*(float(row['balance'])/float(self.total['balance'])),2)
+                    portfolio_summary.append(row_copy)
+
+
+        self.total['children'] = portfolio_summary
+
         self.total['change'] = round((float(self.total['balance'] - self.total['cost']) /
                                      (float(self.total['cost'])+.00001)) * 100, 2)
         self.total['PnL'] = round(float(self.total['balance'] - self.total['cost']), 2)
